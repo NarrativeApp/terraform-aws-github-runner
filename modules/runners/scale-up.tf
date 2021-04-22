@@ -4,12 +4,6 @@ resource "aws_kms_grant" "scale_up" {
   key_id            = var.encryption.kms_key_id
   grantee_principal = aws_iam_role.scale_up.arn
   operations        = ["Decrypt"]
-
-  constraints {
-    encryption_context_equals = {
-      Environment = var.environment
-    }
-  }
 }
 
 resource "aws_lambda_function" "scale_up" {
@@ -28,20 +22,19 @@ resource "aws_lambda_function" "scale_up" {
 
   environment {
     variables = {
-      ENABLE_ORGANIZATION_RUNNERS = var.enable_organization_runners
-      ENVIRONMENT                 = var.environment
-      GHES_URL                    = var.ghes_url
-      GITHUB_APP_CLIENT_ID        = var.github_app.client_id
-      GITHUB_APP_CLIENT_SECRET    = local.github_app_client_secret
-      GITHUB_APP_ID               = var.github_app.id
-      GITHUB_APP_KEY_BASE64       = local.github_app_key_base64
-      KMS_KEY_ID                  = var.encryption.kms_key_id
-      RUNNER_EXTRA_LABELS         = var.runner_extra_labels
-      RUNNER_GROUP_NAME           = var.runner_group_name
-      RUNNERS_MAXIMUM_COUNT       = var.runners_maximum_count
-      LAUNCH_TEMPLATE_NAME        = aws_launch_template.runner.name
-      LAUNCH_TEMPLATE_VERSION     = aws_launch_template.runner.latest_version
-      SUBNET_IDS                  = join(",", var.subnet_ids)
+      ENABLE_ORGANIZATION_RUNNERS             = var.enable_organization_runners
+      ENVIRONMENT                             = var.environment
+      GHES_URL                                = var.ghes_url
+      GITHUB_APP_KEY_BASE64_PARAMETER_NAME    = var.github_app.key_base64_parameter_name
+      GITHUB_APP_ID_PARAMETER_NAME            = var.github_app.id_parameter_name
+      GITHUB_APP_CLIENT_ID_PARAMETER_NAME     = var.github_app.client_id_parameter_name
+      GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME = var.github_app.client_secret_parameter_name
+      RUNNER_EXTRA_LABELS                     = var.runner_extra_labels
+      RUNNER_GROUP_NAME                       = var.runner_group_name
+      RUNNERS_MAXIMUM_COUNT                   = var.runners_maximum_count
+      LAUNCH_TEMPLATE_NAME                    = aws_launch_template.runner.name
+      LAUNCH_TEMPLATE_VERSION                 = aws_launch_template.runner.latest_version
+      SUBNET_IDS                              = join(",", var.subnet_ids)
     }
   }
 
@@ -88,6 +81,14 @@ resource "aws_iam_role_policy" "scale_up" {
   policy = templatefile("${path.module}/policies/lambda-scale-up.json", {
     arn_runner_instance_role = aws_iam_role.runner.arn
     sqs_arn                  = var.sqs_build_queue.arn
+  })
+}
+
+resource "aws_iam_role_policy" "scale_up_ssm_parameters" {
+  name = "${var.environment}-lambda-scale-up-ssm-parameters"
+  role = aws_iam_role.scale_up.name
+  policy = templatefile("${path.module}/policies/instance-ssm-parameters-policy.json", {
+    arn_ssm_parameters = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}-*"
   })
 }
 

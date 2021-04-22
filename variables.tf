@@ -29,13 +29,13 @@ variable "enable_organization_runners" {
 }
 
 variable "github_app" {
-  description = "GitHub app parameters, see your github app. Ensure the key is the base64-encoded `.pem` file (the output of `base64 app.private-key.pem`, not the content of `private-key.pem`)."
+  description = "GitHub App parameters. See your GitHub App. All values except the webhook secret are expected to be valid SSM Parameter names, referring to existing SSM Parameters. Ensure the private key is the base64-encoding of the `.pem` file (the output of `base64 app.private-key.pem`, not the content of `private-key.pem` itself)."
   type = object({
-    key_base64     = string
-    id             = string
-    client_id      = string
-    client_secret  = string
-    webhook_secret = string
+    key_base64_parameter_name    = string
+    id_parameter_name            = string
+    client_id_parameter_name     = string
+    client_secret_parameter_name = string
+    webhook_secret               = string
   })
 }
 
