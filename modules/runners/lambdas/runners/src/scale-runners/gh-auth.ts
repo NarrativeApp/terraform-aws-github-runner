@@ -3,7 +3,7 @@ import { request } from '@octokit/request';
 import { createAppAuth } from '@octokit/auth-app';
 import { Authentication, StrategyOptions } from '@octokit/auth-app/dist-types/types';
 import { OctokitOptions } from '@octokit/core/dist-types/types';
-import { decrypt } from './kms';
+import SSM from './ssm';
 
 export async function createOctoClient(token: string, ghesApiUrl = ''): Promise<Octokit> {
   const ocktokitOptions: OctokitOptions = {
@@ -21,25 +21,28 @@ export async function createGithubAuth(
   authType: 'app' | 'installation',
   ghesApiUrl = '',
 ): Promise<Authentication> {
-  const clientSecret = await decrypt(
-    process.env.GITHUB_APP_CLIENT_SECRET as string,
-    process.env.KMS_KEY_ID as string,
-    process.env.ENVIRONMENT as string,
+  const ssm = new SSM();
+  const privateKeyBase64 = await ssm.getParameter(
+    process.env.GITHUB_APP_KEY_BASE64_PARAMETER_NAME as string
   );
-  const privateKeyBase64 = await decrypt(
-    process.env.GITHUB_APP_KEY_BASE64 as string,
-    process.env.KMS_KEY_ID as string,
-    process.env.ENVIRONMENT as string,
+  const appIdString = await ssm.getParameter(
+    process.env.GITHUB_APP_ID_PARAMETER_NAME as string
   );
-
-  if (clientSecret === undefined || privateKeyBase64 === undefined) {
-    throw Error('Cannot decrypt.');
+  const clientId = await ssm.getParameter(
+    process.env.GITHUB_APP_CLIENT_ID_PARAMETER_NAME as string
+  );
+  const clientSecret = await ssm.getParameter(
+    process.env.GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME as string
+  );
+  if (privateKeyBase64 === undefined
+      || appIdString === undefined
+      || clientId === undefined
+      || clientSecret === undefined) {
+    throw Error('Cannot decrypt GitHub App parameters.');
   }
 
   const privateKey = Buffer.from(privateKeyBase64, 'base64').toString();
-
-  const appId: number = parseInt(process.env.GITHUB_APP_ID as string);
-  const clientId = process.env.GITHUB_APP_CLIENT_ID as string;
+  const appId = parseInt(appIdString);
 
   const authOptions: StrategyOptions = {
     appId,

@@ -4,12 +4,6 @@ resource "aws_kms_grant" "scale_down" {
   key_id            = var.encryption.kms_key_id
   grantee_principal = aws_iam_role.scale_down.arn
   operations        = ["Decrypt"]
-
-  constraints {
-    encryption_context_equals = {
-      Environment = var.environment
-    }
-  }
 }
 
 resource "aws_lambda_function" "scale_down" {
@@ -27,16 +21,15 @@ resource "aws_lambda_function" "scale_down" {
 
   environment {
     variables = {
-      ENVIRONMENT                     = var.environment
-      KMS_KEY_ID                      = var.encryption.kms_key_id
-      ENABLE_ORGANIZATION_RUNNERS     = var.enable_organization_runners
-      MINIMUM_RUNNING_TIME_IN_MINUTES = var.minimum_running_time_in_minutes
-      GITHUB_APP_KEY_BASE64           = local.github_app_key_base64
-      GITHUB_APP_ID                   = var.github_app.id
-      GITHUB_APP_CLIENT_ID            = var.github_app.client_id
-      GITHUB_APP_CLIENT_SECRET        = local.github_app_client_secret
-      SCALE_DOWN_CONFIG               = jsonencode(var.idle_config)
-      GHES_URL                        = var.ghes_url
+      ENVIRONMENT                             = var.environment
+      ENABLE_ORGANIZATION_RUNNERS             = var.enable_organization_runners
+      MINIMUM_RUNNING_TIME_IN_MINUTES         = var.minimum_running_time_in_minutes
+      GITHUB_APP_KEY_BASE64_PARAMETER_NAME    = var.github_app.key_base64_parameter_name
+      GITHUB_APP_ID_PARAMETER_NAME            = var.github_app.id_parameter_name
+      GITHUB_APP_CLIENT_ID_PARAMETER_NAME     = var.github_app.client_id_parameter_name
+      GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME = var.github_app.client_secret_parameter_name
+      SCALE_DOWN_CONFIG                       = jsonencode(var.idle_config)
+      GHES_URL                                = var.ghes_url
     }
   }
 
@@ -86,6 +79,14 @@ resource "aws_iam_role_policy" "scale_down" {
   name   = "${var.environment}-lambda-scale-down-policy"
   role   = aws_iam_role.scale_down.name
   policy = templatefile("${path.module}/policies/lambda-scale-down.json", {})
+}
+
+resource "aws_iam_role_policy" "scale_down_ssm_parameters" {
+  name = "${var.environment}-lambda-scale-down-ssm-parameters"
+  role = aws_iam_role.scale_down.name
+  policy = templatefile("${path.module}/policies/instance-ssm-parameters-policy.json", {
+    arn_ssm_parameters = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment}-*"
+  })
 }
 
 resource "aws_iam_role_policy" "scale_down_logging" {
