@@ -24,6 +24,10 @@ jest.mock('@octokit/rest', () => ({
 
 jest.mock('./runners');
 
+jest.mock('./ssm', () => jest.fn().mockImplementation(() => ({
+  getParameter: jest.fn().mockImplementation(() => ''),
+})));
+
 const TEST_DATA: ActionRequestMessage = {
   id: 1,
   eventType: 'check_run',
@@ -47,10 +51,10 @@ beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
   process.env = { ...cleanEnv };
-  process.env.GITHUB_APP_KEY_BASE64 = 'TEST_CERTIFICATE_DATA';
-  process.env.GITHUB_APP_ID = '1337';
-  process.env.GITHUB_APP_CLIENT_ID = 'TEST_CLIENT_ID';
-  process.env.GITHUB_APP_CLIENT_SECRET = 'TEST_CLIENT_SECRET';
+  process.env.GITHUB_APP_KEY_BASE64_PARAMETER_NAME = 'private-key';
+  process.env.GITHUB_APP_ID_PARAMETER_NAME = 'app-id';
+  process.env.GITHUB_APP_CLIENT_ID_PARAMETER_NAME = 'client-id';
+  process.env.GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME = 'client-secret';
   process.env.RUNNERS_MAXIMUM_COUNT = '3';
   process.env.ENVIRONMENT = 'unit-test-environment';
 

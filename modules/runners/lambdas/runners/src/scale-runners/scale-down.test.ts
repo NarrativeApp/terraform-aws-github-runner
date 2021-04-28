@@ -25,6 +25,10 @@ jest.mock('@octokit/rest', () => ({
 
 jest.mock('./runners');
 
+jest.mock('./ssm', () => jest.fn().mockImplementation(() => ({
+  getParameter: jest.fn().mockImplementation(() => ''),
+})));
+
 export interface TestData {
   repositoryName: string;
   repositoryOwner: string;
@@ -105,10 +109,10 @@ const DEFAULT_REGISTERED_RUNNERS = [
 
 describe('scaleDown', () => {
   beforeEach(() => {
-    process.env.GITHUB_APP_KEY_BASE64 = 'TEST_CERTIFICATE_DATA';
-    process.env.GITHUB_APP_ID = '1337';
-    process.env.GITHUB_APP_CLIENT_ID = 'TEST_CLIENT_ID';
-    process.env.GITHUB_APP_CLIENT_SECRET = 'TEST_CLIENT_SECRET';
+    process.env.GITHUB_APP_KEY_BASE64_PARAMETER_NAME = 'private-key';
+    process.env.GITHUB_APP_ID_PARAMETER_NAME = 'app-id';
+    process.env.GITHUB_APP_CLIENT_ID_PARAMETER_NAME = 'client-id';
+    process.env.GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME = 'client-secret';
     process.env.RUNNERS_MAXIMUM_COUNT = '3';
     process.env.ENVIRONMENT = environment;
     process.env.MINIMUM_RUNNING_TIME_IN_MINUTES = minimumRunningTimeInMinutes.toString();
@@ -319,10 +323,10 @@ describe('scaleDown', () => {
 
 describe('scaleDown ghes', () => {
   beforeEach(() => {
-    process.env.GITHUB_APP_KEY_BASE64 = 'TEST_CERTIFICATE_DATA';
-    process.env.GITHUB_APP_ID = '1337';
-    process.env.GITHUB_APP_CLIENT_ID = 'TEST_CLIENT_ID';
-    process.env.GITHUB_APP_CLIENT_SECRET = 'TEST_CLIENT_SECRET';
+    process.env.GITHUB_APP_KEY_BASE64_PARAMETER_NAME = 'private-key';
+    process.env.GITHUB_APP_ID_PARAMETER_NAME = 'app-id';
+    process.env.GITHUB_APP_CLIENT_ID_PARAMETER_NAME = 'client-id';
+    process.env.GITHUB_APP_CLIENT_SECRET_PARAMETER_NAME = 'client-secret';
     process.env.RUNNERS_MAXIMUM_COUNT = '3';
     process.env.ENVIRONMENT = environment;
     process.env.MINIMUM_RUNNING_TIME_IN_MINUTES = minimumRunningTimeInMinutes.toString();
